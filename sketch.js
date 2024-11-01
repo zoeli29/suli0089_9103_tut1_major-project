@@ -1,7 +1,8 @@
 // --- Global Variables ---
 let circles = [];  // store circlepattern
 let beads = [];  //  store the beads
-let maxAttempts = 5000; // set max attempts to prevent overlap
+let maxBead = 5000; // set max beads
+let maxCircle = 1000 // set max circles
 
 
 // --- Setup ---
@@ -28,7 +29,7 @@ function initialisePatterns() {
   let attempts = 0; // starting point for generation
   
   // Use while loop to keep creating circles until it maxes out
-  while (attempts < 1000) { 
+  while (attempts < maxCircle) { 
     let size = random(width * 0.05, width * 0.15); // Set random size relative to canvas width
     let x = random(size / 2, width - size / 2); // Random x position
     let y = random(size / 2, height - size / 2); // Random y
@@ -56,7 +57,7 @@ function initialisePatterns() {
 
   // Create small beads that avoid the main circle and eachother
   attempts = 0;
-  while (attempts < maxAttempts) { 
+  while (attempts < maxBead) { 
     let beadSize = random(width * 0.005, width * 0.02); //random bead size relative to canvas size
     let x = random(beadSize / 2, width - beadSize / 2); // random x position
     let y = random(beadSize / 2, height - beadSize / 2); //random y position
