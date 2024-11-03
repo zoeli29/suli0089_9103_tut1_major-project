@@ -3,18 +3,17 @@ let circles = [];  // store circlepattern
 let beads = [];  //  store the beads
 let maxBead = 5000; // set max beads
 let maxCircle = 1000 // set max circles
-
+let selectedCircle = null; // tracks currently selected circle
 
 // --- Setup ---
 function setup() {
   createCanvas(windowWidth, windowHeight);
   angleMode(DEGREES);
-  noLoop();// make design static unless refreshed
+  // noLoop();// make design static unless refreshed
   initialisePatterns(); // call function for the circle and the beads
 }
 
-
-// --- Initialize big circles and beads from the classes ---
+// --- Initialise big circles and beads from the classes ---
 
 // Learned about while loop from the coding train example
 //https://thecodingtrain.com/tracks/code-programming-with-p5-js/code/4-loops/1-while-for
@@ -103,6 +102,37 @@ function draw() {
   }
 }
 
+// --- user interaction ---
+
+// to check if mouse is over a circle when pressed
+function mousePressed() {
+  for (let circle of circles) {
+    if (circle.contains(mouseX, mouseY)) {
+      selectedCircle = circle;
+      circle.isDragging = true;
+      circle.offsetX = mouseX - circle.x;
+      circle.offsetY = mouseY - circle.y;
+      break;
+    }
+  }
+}
+
+// to update the circle position when dragging
+function mouseDragged() {
+  if (selectedCircle && selectedCircle.isDragging) {
+    selectedCircle.x = mouseX - selectedCircle.offsetX;
+    selectedCircle.y = mouseY - selectedCircle.offsetY;
+  }
+}
+
+// stop dragging when mouse is released
+function mouseReleased() {
+  if (selectedCircle) {
+    selectedCircle.isDragging = false;
+    selectedCircle = null;
+  }
+}
+
 // --- CirclePattern Class ---
 class CirclePattern {
   constructor(x, y, size) {
@@ -110,16 +140,25 @@ class CirclePattern {
     this.y = y; // y-coordinate
     this.size = size; // Diameter of the main circle
     this.numLayers = int(random(3, 6)); //random number of layers
+    this.isDragging = false; // tracks if the mouse is dragging the circle
+    this.offsetX = 0;
+    this.offsetY = 0;
   }
 
- //display the circles that alternate between lines and circles
+  // to check if the mouse is over the circle
+  contains(px, py) {
+    let d = dist(px, py, this.x, this.y);
+    return d < this.size / 2;
+  }
+
+ // display the circles that alternate between lines and circles
   display() {
     push(); // Save transformation
     translate(this.x, this.y); // Move origin to centre of circle
     
     // Draw each layer from outside to in
     for (let i = this.numLayers; i > 0; i--) {
-      let layerSize = (this.size / this.numLayers) * i; //decide layer diameter
+      let layerSize = (this.size / this.numLayers) * i; // decide layer diameter
       let col = color(random(255), random(255), random(255)); // assign random colour for each layer
       
       // between lines and dots
@@ -149,7 +188,7 @@ class CirclePattern {
       let angle = map(i, 0, numDots, 0, 360); // Distribute dots evenly in a circle
       let x = cos(angle) * size / 2.5; // x-coordinate for each dot
       let y = sin(angle) * size / 2.5; // y-coordinate for each dot
-      ellipse(x, y, dotRadius); // Draw the dot
+      ellipse(x, y, dotRadius); // draw the dot
     }
   }
 
@@ -174,10 +213,10 @@ class CirclePattern {
 // --- Bead Class ---
 class Bead {
   constructor(x, y, size) {
-    this.x = x; // x of bead center
-    this.y = y; // y of bead center
-    this.size = size; //diameter
-    this.color = color(255, random(100, 200), 0); //determine bead color (oranges)
+    this.x = x; // x of bead centre
+    this.y = y; // y of bead centre
+    this.size = size; // diameter
+    this.color = color(255, random(100, 200), 0); // determine bead colour (oranges)
   }
 
   // Display the bead as a filled circle
@@ -191,7 +230,7 @@ class Bead {
 // make the whole thing resizable and scalable
 function windowResized() {
   resizeCanvas(windowWidth, windowHeight);
-  circles = []; //clear circles
+  circles = []; // clear circles
   beads = []; // clear beads
   initialisePatterns(); // regenerate patterns
 }
