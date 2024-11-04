@@ -4,6 +4,7 @@ let beads = [];  //  store the beads
 let maxBead = 1200; // set max beads
 let maxCircle = 2000 // set max circles
 let selectedCircle = null; // tracks currently selected circle
+let moving = false; // track if beads are moving
 
 // --- Setup ---
 function setup() {
@@ -83,7 +84,14 @@ function initialisePatterns() {
 
 // --- Draw Function ---
 function draw() {
-  background(10, 10, 50); //set background to navy blue
+  background(10, 10, 50); // set background to navy blue
+
+  // update bead positions if moving
+  if (moving) {
+    for (let bead of beads) {
+      bead.update(); // update bead positions
+    }
+  }
 
   // Draw each bead
   for (let bead of beads) {
@@ -147,8 +155,9 @@ function repositionCircles() {
         let overlap = minDist - d;
 
         // to push the circle away from the selected circle - calculate the angle to push it away from the selected circle
-        circle.x += cos(angle) * overlap;
-        circle.y += sin(angle) * overlap;
+        // multiplier to make the animations look smoother when the circles are moving away
+        circle.x += cos(angle) * overlap * 0.3;
+        circle.y += sin(angle) * overlap * 0.3;
         
         // constrain to ensure circles stay inside the canvas
         let radius = circle.size / 2;
@@ -167,6 +176,13 @@ function mouseReleased() {
   }
 }
 
+// user input to move the beads by pressing "1"
+function keyPressed() {
+  if (key === '1') {
+    moving = !moving;
+  }
+}
+
 // --- CirclePattern Class ---
 class CirclePattern {
   constructor(x, y, size) {
@@ -177,6 +193,13 @@ class CirclePattern {
     this.isDragging = false; // tracks if the mouse is dragging the circle
     this.offsetX = 0; // keeps track of mouse offset when dragging
     this.offsetY = 0;
+
+    // array to store colours for each layer
+    this.layerColors = [];
+    for (let i = this.numLayers; i > 0; i--) {
+      let col = color(random(255), random(255), random(255)); // random colour for each layer
+      this.layerColors.push(col);
+    }
   }
 
   // to check if the mouse is over the circle
@@ -193,7 +216,7 @@ class CirclePattern {
     // Draw each layer from outside to in
     for (let i = this.numLayers; i > 0; i--) {
       let layerSize = (this.size / this.numLayers) * i; // decide layer diameter
-      let col = color(random(255), random(255), random(255)); // assign random colour for each layer
+      let col = this.layerColors[this.numLayers - i]; // assign random colour for each layer from array
       
       // between lines and dots
       if (i % 2 == 0) {
@@ -250,6 +273,22 @@ class Bead {
     this.y = y; // y of bead centre
     this.size = size; // diameter
     this.color = color(random(100, 255), 0, random(100, 255)); // determine bead colour (purple and pink)
+    this.xSpeed = random(0.1, 0.5) * (random() < 0.5 ? 1 : -1); // random speed and direction for x
+    this.ySpeed = random(0.1, 0.5) * (random() < 0.5 ? 1 : -1); // random speed and direction for y
+  }
+
+  // to move the beads
+  update() {
+    this.x += this.xSpeed;
+    this.y += this.ySpeed;
+
+    // check when beads are at the edge of the canvas to reverse direction
+    if (this.x < this.size / 2 || this.x > width - this.size / 2) {
+      this.xSpeed *= -1; // reverse direction
+    }
+    if (this.y < this.size / 2 || this.y > height - this.size / 2) {
+      this.ySpeed *= -1; // reverse direction
+    }
   }
 
   // Display the bead as a filled circle
