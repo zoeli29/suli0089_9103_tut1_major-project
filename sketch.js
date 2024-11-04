@@ -1,15 +1,14 @@
 // --- Global Variables ---
 let circles = [];  // store circlepattern
 let beads = [];  //  store the beads
-let maxBead = 5000; // set max beads
-let maxCircle = 1000 // set max circles
+let maxBead = 1200; // set max beads
+let maxCircle = 2000 // set max circles
 let selectedCircle = null; // tracks currently selected circle
 
 // --- Setup ---
 function setup() {
   createCanvas(windowWidth, windowHeight);
   angleMode(DEGREES);
-  // noLoop();// make design static unless refreshed
   initialisePatterns(); // call function for the circle and the beads
 }
 
@@ -23,10 +22,39 @@ function setup() {
 
 //chatgpt was used to help troubleshoot the circle packing formula, since it initially would not run properly
 
-// big circles
 function initialisePatterns() {
   let attempts = 0; // starting point for generation
   
+  // draw beads
+  // changed order of initialisePatterns function so that the beads are drawn first and the placement of the circles don't affect the beads
+  while (attempts < maxBead) { 
+    let beadSize = random(width * 0.005, width * 0.02); //random bead size relative to canvas size
+    let x = random(beadSize / 2, width - beadSize / 2); // random x position
+    let y = random(beadSize / 2, height - beadSize / 2); //random y position
+
+    // Check if bead overlaps with any main circles or other beads
+    let overlapping = false;
+    
+    // removed check beads for overlap with circles
+    for (let bead of beads) {
+      let d = dist(x, y, bead.x, bead.y);
+      if (d < (beadSize / 2 + bead.size / 2)) {
+        overlapping = true;
+        break;
+      }
+    }
+
+    // Add bead to array if it doesnt overlap
+    if (!overlapping) {
+      beads.push(new Bead(x, y, beadSize));
+    }
+
+    attempts++;
+  }
+
+  attempts = 0;
+
+  // draw circles
   // Use while loop to keep creating circles until it maxes out
   while (attempts < maxCircle) { 
     let size = random(width * 0.05, width * 0.15); // Set random size relative to canvas width
@@ -49,40 +77,6 @@ function initialisePatterns() {
       circles.push(new CirclePattern(x, y, size));
     }
     
-    attempts++;
-  }
-
-// Now for the beads!!!!
-
-  // Create small beads that avoid the main circle and eachother
-  attempts = 0;
-  while (attempts < maxBead) { 
-    let beadSize = random(width * 0.005, width * 0.02); //random bead size relative to canvas size
-    let x = random(beadSize / 2, width - beadSize / 2); // random x position
-    let y = random(beadSize / 2, height - beadSize / 2); //random y position
-
-    // Check if bead overlaps with any main circles or other beads
-    let overlapping = false;
-    for (let circle of circles) {
-      let d = dist(x, y, circle.x, circle.y); //distance between bead and each main circle
-      if (d < (beadSize / 2 + circle.size / 2)) {
-        overlapping = true;
-        break;
-      }
-    }
-    for (let bead of beads) {
-      let d = dist(x, y, bead.x, bead.y);
-      if (d < (beadSize / 2 + bead.size / 2)) {
-        overlapping = true;
-        break;
-      }
-    }
-
-    // Add bead to array if it doesnt overlap
-    if (!overlapping) {
-      beads.push(new Bead(x, y, beadSize));
-    }
-
     attempts++;
   }
 }
@@ -110,6 +104,8 @@ function mousePressed() {
     if (circle.contains(mouseX, mouseY)) {
       selectedCircle = circle;
       circle.isDragging = true;
+
+      // checks the distance between mouse position and the centre of the selected circle
       circle.offsetX = mouseX - circle.x;
       circle.offsetY = mouseY - circle.y;
       break;
@@ -120,8 +116,46 @@ function mousePressed() {
 // to update the circle position when dragging
 function mouseDragged() {
   if (selectedCircle && selectedCircle.isDragging) {
-    selectedCircle.x = mouseX - selectedCircle.offsetX;
-    selectedCircle.y = mouseY - selectedCircle.offsetY;
+
+    // to calculate the new position of the selected circle when dragged
+    let newX = mouseX - selectedCircle.offsetX;
+    let newY = mouseY - selectedCircle.offsetY;
+
+    // add constrain to keep circles within the canvas
+    let radius = selectedCircle.size / 2;
+    selectedCircle.x = constrain(newX, radius, width - radius);
+    selectedCircle.y = constrain(newY, radius, height - radius);
+
+    repositionCircles(selectedCircle);
+
+  // redraws canvas while dragging
+  redraw();
+  }
+}
+
+function repositionCircles() {
+  // adjust the nearby circle positions so they avoid overlap
+  // chatgpt was used to calculate the distance between the selected circle and other circles, and the repulsive force used to calculate the direction of how the surrounding circles move away from the selected circle
+  // atan2() is used to calculate the angle from the selected circle to other circles - it applies the repulsive force in the correct direction
+  for (let circle of circles) {
+    if (circle !== selectedCircle) {
+      let d = dist(selectedCircle.x, selectedCircle.y, circle.x, circle.y);
+      let minDist = (selectedCircle.size + circle.size) / 2;
+
+      if (d < minDist) {
+        let angle = atan2(circle.y - selectedCircle.y, circle.x - selectedCircle.x);
+        let overlap = minDist - d;
+
+        // to push the circle away from the selected circle - calculate the angle to push it away from the selected circle
+        circle.x += cos(angle) * overlap;
+        circle.y += sin(angle) * overlap;
+        
+        // constrain to ensure circles stay inside the canvas
+        let radius = circle.size / 2;
+        circle.x = constrain(circle.x, radius, width - radius);
+        circle.y = constrain(circle.y, radius, height - radius);
+      }
+    }
   }
 }
 
@@ -139,9 +173,9 @@ class CirclePattern {
     this.x = x; // x-coordinate
     this.y = y; // y-coordinate
     this.size = size; // Diameter of the main circle
-    this.numLayers = int(random(3, 6)); //random number of layers
+    this.numLayers = int(random(3, 6)); // random number of layers
     this.isDragging = false; // tracks if the mouse is dragging the circle
-    this.offsetX = 0;
+    this.offsetX = 0; // keeps track of mouse offset when dragging
     this.offsetY = 0;
   }
 
@@ -192,7 +226,7 @@ class CirclePattern {
     }
   }
 
-  // method to draw lines from center of circle
+  // method to draw lines from centre of circle
   drawLines(size, col) {
     stroke(col); // Set stroke colour
     strokeWeight(2);
@@ -209,14 +243,13 @@ class CirclePattern {
   }
 }
 
-
 // --- Bead Class ---
 class Bead {
   constructor(x, y, size) {
     this.x = x; // x of bead centre
     this.y = y; // y of bead centre
     this.size = size; // diameter
-    this.color = color(255, random(100, 200), 0); // determine bead colour (oranges)
+    this.color = color(random(100, 255), 0, random(100, 255)); // determine bead colour (purple and pink)
   }
 
   // Display the bead as a filled circle
