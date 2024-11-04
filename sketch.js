@@ -1,10 +1,11 @@
 // --- Global Variables ---
 let circles = [];  // store circlepattern
 let beads = [];  //  store the beads
-let maxBead = 1200; // set max beads
+let maxBead = 800; // set max beads
 let maxCircle = 2000 // set max circles
 let selectedCircle = null; // tracks currently selected circle
 let moving = false; // track if beads are moving
+let rotationSpeed = 500; // set rotation speed
 
 // --- Setup ---
 function setup() {
@@ -21,7 +22,7 @@ function setup() {
 // Learned about circlepacking from happy coding
 //https://happycoding.io/tutorials/p5js/creating-classes/circle-packing
 
-//chatgpt was used to help troubleshoot the circle packing formula, since it initially would not run properly
+// chatgpt was used to help troubleshoot the circle packing formula, since it initially would not run properly
 
 function initialisePatterns() {
   let attempts = 0; // starting point for generation
@@ -100,7 +101,8 @@ function draw() {
 
   // Draw each circle
   for (let circle of circles) {
-    circle.display(); //display the circles
+    circle.update();
+    circle.display(); // display the circles
   }
 }
 
@@ -134,6 +136,12 @@ function mouseDragged() {
     selectedCircle.x = constrain(newX, radius, width - radius);
     selectedCircle.y = constrain(newY, radius, height - radius);
 
+    // selected circle to rotate when dragged
+    selectedCircle.updateRotation();
+
+    // selected circle to change colour when dragged
+    selectedCircle.changeColour();
+
     repositionCircles(selectedCircle);
 
   // redraws canvas while dragging
@@ -144,7 +152,7 @@ function mouseDragged() {
 function repositionCircles() {
   // adjust the nearby circle positions so they avoid overlap
   // chatgpt was used to calculate the distance between the selected circle and other circles, and the repulsive force used to calculate the direction of how the surrounding circles move away from the selected circle
-  // atan2() is used to calculate the angle from the selected circle to other circles - it applies the repulsive force in the correct direction
+  // atan2() [https://p5js.org/reference/p5/atan2/] is used to calculate the angle from the selected circle to other circles - it applies the repulsive force in the correct direction
   for (let circle of circles) {
     if (circle !== selectedCircle) {
       let d = dist(selectedCircle.x, selectedCircle.y, circle.x, circle.y);
@@ -191,15 +199,64 @@ class CirclePattern {
     this.size = size; // Diameter of the main circle
     this.numLayers = int(random(3, 6)); // random number of layers
     this.isDragging = false; // tracks if the mouse is dragging the circle
-    this.offsetX = 0; // keeps track of mouse offset when dragging
+    
+    // keeps track of mouse offset when dragging
+    this.offsetX = 0;
     this.offsetY = 0;
 
+    // animate rotation of circles
+    this.rotation = 0
+
+    // move circles on the canvas slightly to add motion to the artwork
+    this.xSpeed = random(-0.08, 0.08);
+    this.ySpeed = random(-0.08, 0.08);
+
+    // colours for different states
+    this.originalColour = color(random(255), random(255), random(255)); // original colour of circle pattern
+    this.currentColour = this.originalColour;
+
     // array to store colours for each layer
-    this.layerColors = [];
+    this.layerColours = [];
     for (let i = this.numLayers; i > 0; i--) {
       let col = color(random(255), random(255), random(255)); // random colour for each layer
-      this.layerColors.push(col);
+      this.layerColours.push(col);
     }
+  }
+
+  // create slight drift motion of the circles
+  update() {
+    // when circles are not being dragged - add slow drift
+    if (!this.isDragging) {
+      this.x += this.xSpeed;
+      this.y += this.ySpeed;
+
+      // check if circles hit the edge - if so, it reverses direction
+      if (this.x < this.size / 2 || this.x > width - this.size / 2) this.xSpeed *= -1;
+      if (this.y < this.size / 2 || this.y > height - this.size / 2) this.ySpeed *= -1;
+
+      // repel from other circles
+      // checks all other circles from selected circle
+      // chatgpt was used for the calculations of this method using atan2() for the angle of repulsion
+      for (let other of circles) {
+        if (other !== this) {
+            // calculates the distance between the current circle and other circles
+            let d = dist(this.x, this.y, other.x, other.y);
+            let minDist = (this.size + other.size) / 2;
+            if (d < minDist) {
+                // this calculates what angle the other circle should move from the current circle
+                let angle = atan2(other.y - this.y, other.x - this.x);
+                let overlap = minDist - d;
+                this.x -= cos(angle) * overlap * 0.05;
+                this.y -= sin(angle) * overlap * 0.05;
+            }
+          }
+       }
+    }
+  }
+
+  // colour change when dragged each time
+  changeColour() {
+    this.currentColour = color(random(255), random(255), random(255));
   }
 
   // to check if the mouse is over the circle
@@ -212,11 +269,12 @@ class CirclePattern {
   display() {
     push(); // Save transformation
     translate(this.x, this.y); // Move origin to centre of circle
+    rotate(this.rotation); // applies rotate to circle
     
     // Draw each layer from outside to in
     for (let i = this.numLayers; i > 0; i--) {
       let layerSize = (this.size / this.numLayers) * i; // decide layer diameter
-      let col = this.layerColors[this.numLayers - i]; // assign random colour for each layer from array
+      let col = this.layerColours[this.numLayers - i]; // assign random colour for each layer from array
       
       // between lines and dots
       if (i % 2 == 0) {
@@ -227,13 +285,19 @@ class CirclePattern {
     }
     
     pop(); // Restore transformation
+    
+  }
+
+  // rotation speed
+  updateRotation() {
+    this.rotation += rotationSpeed;
   }
 
 // Chatgpt was used to calculate the distribution of lines and dots inside each layer using methods
 
   // method to draw dots around the circumference of each layer
   drawDots(size, col) {
-    fill(col); // Set fill color for base circle
+    fill(this.currentColour); // Set fill colour for base circle
     noStroke();
     ellipse(0, 0, size); // Draw the base circle
 
@@ -272,7 +336,7 @@ class Bead {
     this.x = x; // x of bead centre
     this.y = y; // y of bead centre
     this.size = size; // diameter
-    this.color = color(random(100, 255), 0, random(100, 255)); // determine bead colour (purple and pink)
+    this.colour = color(random(100, 255), 0, random(100, 255)); // determine bead colour (purple and pink)
     this.xSpeed = random(0.1, 0.5) * (random() < 0.5 ? 1 : -1); // random speed and direction for x
     this.ySpeed = random(0.1, 0.5) * (random() < 0.5 ? 1 : -1); // random speed and direction for y
   }
@@ -293,7 +357,7 @@ class Bead {
 
   // Display the bead as a filled circle
   display() {
-    fill(this.color); // Set fill
+    fill(this.colour); // Set fill
     noStroke();
     ellipse(this.x, this.y, this.size); // draw the bead
   }
