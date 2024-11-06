@@ -10,7 +10,7 @@
 ## Animating the group code
 
 ### Animation method
-The method used to animate this artwork is through **user input**. It uses both mouse and keyboard interactions to animate different elements of the artwork.
+The method used to animate this artwork is through **user input**. It uses both mouse and keyboard interactions to animate different elements of the artwork. I chose this method because it allows users to create unique artworks based on their own input, creating a dynamic experience that makes interacting with the artwork more engaging.
 
 ### How is it animated
 Several properties in the artwork is animated in different ways.
@@ -19,13 +19,13 @@ Several properties in the artwork is animated in different ways.
 - Moved by dragging circles around the canvas
 - Surrounding circles will be repelled and move away from the selected circle
 - The circles will rotate and change colour when it is dragged around the canvas
-- This method is different from other group members, as the `mouseDragged()` function changes both rotation and colours, and is only applied to the selected circle. Other group members have used methods like changing circle sizes and constant rotation of all circles
+- This method is different from other group members, as the `mouseDragged()` function changes both rotation and colours, and is only applied to the selected circle. Other group members have used methods like changing circle sizes and constant rotation of all circles.
 - The circles move slightly on its own and repel each other, mainly for more visual interest than all the circles being static.
 
 **Background Beads:**
 - The beads are static when the page loads, but users can interact by pressing "1", whic makes the beads move around the canvas at constant speed
 - When the beads reach the edges of the canvas, they will change direction.
-- This is different to how other group members animated the beads as they used different methods of animating the movement of the beads
+- This is different to how other group members animated the beads as they used different methods of animating the movement of the beads, such as making it mimic a flowing waterfall effect.
 
 ### Inspiration
 
@@ -109,6 +109,3 @@ if (moving) {
 
 *`Bead` class*
 - `update()` is added to animate the movement of the beads. This method uses a random speed initialised in the constructor, and checks when the beads are at the edge of the canvas to reverse its direction
-
-*`windowResized` function*
-- Makes the canvas resizable and regenerates patterns when resized
