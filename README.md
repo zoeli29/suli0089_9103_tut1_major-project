@@ -51,7 +51,7 @@ The main changes to the group code is the `initialisePatterns()` function.
 
 Another aspect changed in the group code is the colours of the beads from orange to purple tones due to preference.
 
-I also changed the way colours are
+I also changed the way colours are selected. In the group code, it assigns random colours on each frame, making the artwork change colours on every frame. I updated the code to use a `layerColours` array to store colours generated in the constructor, and in `display()`, it retrieves the assigned colour from the array, which allows the colours to stay static unless refreshed or changed due to user interaction (`mouseDragged()`). 
 
 **Animation and user interaction:**
 
