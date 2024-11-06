@@ -98,6 +98,8 @@ if (moving) {
 *`keyPressed()` function*
 - Toggles the `moving` state of the beads - user interaction to control the beads animation
 
+**Classes:**
+
 *`CirclePattern` class*
 - The class initialises several properties to manage the animations of each circle in the constructor
 - Used an array to store initial colours in the layers so that they only change once refreshed
@@ -109,4 +111,4 @@ if (moving) {
 - `update()` is added to animate the movement of the beads. This method uses a random speed initialised in the constructor, and checks when the beads are at the edge of the canvas to reverse its direction
 
 *`windowResized` function*
-- makes the canvas resizable and generates patterns when resized
+- Makes the canvas resizable and regenerates patterns when resized
